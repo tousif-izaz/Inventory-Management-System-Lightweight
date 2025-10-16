@@ -1,11 +1,10 @@
 package main
 
 import (
-	"context"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"ims-intro/pkg/common/app"
-	"ims-intro/pkg/common/postgresql"
+	"ims-intro/pkg/common/sqlite"
 	"ims-intro/pkg/controller"
 	"ims-intro/pkg/repository"
 	"ims-intro/pkg/service"
@@ -23,15 +22,15 @@ func main() {
 		log.Println("Warning: .env file not found, using environment variables")
 	}
 
-	ctx := context.Background()
 	configurationManager := app.NewConfigurationManager()
-	dbPool := postgresql.GetConnectionPool(ctx, configurationManager.PostgresqlConfig)
+	db := sqlite.GetConnection(configurationManager.SqliteConfig)
+	defer db.Close()
 
-	userRepository := repository.NewUserRepository(dbPool)
+	userRepository := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepository)
 	userController := controller.NewUserController(userService)
 
-	productRepository := repository.NewProductRepository(dbPool)
+	productRepository := repository.NewProductRepository(db)
 	productService := service.NewProductService(productRepository)
 	productController := controller.NewProductController(productService)
 

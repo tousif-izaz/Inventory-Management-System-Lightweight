@@ -10,12 +10,9 @@ FROM gcr.io/distroless/base-debian12
 
 WORKDIR /app
 COPY --from=builder /build/ims ./ims
+COPY --from=builder /build/schema_sqlite.sql ./schema_sqlite.sql
 
-ENV DB_USER=postgres
-ENV DB_PORT=5434
-ENV DB_PASSWORD=password
-ENV DB_HOST=host.docker.internal
-ENV DB_NAME=ims
+ENV DB_PATH=/app/data/inventory.db
 ENV JWT_KEY=ultra-super-secret
 
 CMD ["/app/ims"]

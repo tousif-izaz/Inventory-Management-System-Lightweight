@@ -1,10 +1,9 @@
 package repository
 
 import (
-	"context"
+	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/labstack/gommon/log"
 	"ims-intro/pkg/domain"
 )
@@ -15,23 +14,20 @@ type IUserRepository interface {
 }
 
 type UserRepository struct {
-	dbPool *pgxpool.Pool
+	db *sql.DB
 }
 
-func NewUserRepository(dbPool *pgxpool.Pool) IUserRepository {
-	return &UserRepository{dbPool}
+func NewUserRepository(db *sql.DB) IUserRepository {
+	return &UserRepository{db}
 }
 
 func (repository *UserRepository) GetUserByUsername(username string) (domain.User, error) {
-	ctx := context.Background()
-
 	var user domain.User
 
-	selectStatement := "SELECT id, username, password, role FROM users WHERE username = $1"
-	userRow := repository.dbPool.QueryRow(ctx, selectStatement, username)
+	selectStatement := "SELECT id, username, password, role FROM users WHERE username = ?"
+	err := repository.db.QueryRow(selectStatement, username).Scan(&user.Id, &user.Username, &user.Password, &user.Role)
 
-	err := userRow.Scan(&user.Id, &user.Username, &user.Password, &user.Role)
-	if err != nil && err.Error() == "no rows in result set" {
+	if err == sql.ErrNoRows {
 		return domain.User{}, errors.New("error while finding user")
 	}
 
@@ -43,16 +39,14 @@ func (repository *UserRepository) GetUserByUsername(username string) (domain.Use
 }
 
 func (repository *UserRepository) SignUp(user domain.User) error {
-	ctx := context.Background()
+	insertStatement := "INSERT INTO users(username, password, role) VALUES (?, ?, ?)"
 
-	insertStatement := "INSERT INTO users(username, password, role) VALUES ($1, $2, $3)"
-
-	addNewUser, err := repository.dbPool.Exec(ctx, insertStatement, user.Username, user.Password, user.Role)
+	result, err := repository.db.Exec(insertStatement, user.Username, user.Password, user.Role)
 	if err != nil {
 		log.Errorf("error while adding new user: %v", err)
 		return err
 	}
 
-	log.Info(fmt.Sprint("User added successfully: %v", addNewUser))
+	log.Info(fmt.Sprintf("User added successfully: %v", result))
 	return nil
 }

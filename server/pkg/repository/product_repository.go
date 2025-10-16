@@ -1,10 +1,8 @@
 package repository
 
 import (
-	"context"
+	"database/sql"
 	"fmt"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/labstack/gommon/log"
 	"ims-intro/pkg/domain"
 )
@@ -19,56 +17,52 @@ type IProductRepository interface {
 }
 
 type ProductRepository struct {
-	dbPool *pgxpool.Pool
+	db *sql.DB
 }
 
-func NewProductRepository(dbPool *pgxpool.Pool) IProductRepository {
-	return &ProductRepository{dbPool}
+func NewProductRepository(db *sql.DB) IProductRepository {
+	return &ProductRepository{db}
 }
 
 func (repository *ProductRepository) GetAllProducts() []*domain.Product {
-	ctx := context.Background()
-	productRows, err := repository.dbPool.Query(ctx, "SELECT id, name, price, quantity, category FROM products")
+	productRows, err := repository.db.Query("SELECT id, name, price, quantity, category FROM products")
 	if err != nil {
 		log.Errorf("error while getting all products: %v", err)
-		return nil
+		return make([]*domain.Product, 0)
 	}
+	defer productRows.Close()
 
 	return extractProductsFromRows(productRows)
 }
 
 func (repository *ProductRepository) GetProductsByCategory(category string) []*domain.Product {
-	ctx := context.Background()
-	productRows, err := repository.dbPool.Query(ctx, "SELECT id, name, price, quantity, category FROM products WHERE category = $1", category)
+	productRows, err := repository.db.Query("SELECT id, name, price, quantity, category FROM products WHERE category = ?", category)
 	if err != nil {
 		log.Errorf("error while getting all products by category: %v", err)
-		return nil
+		return make([]*domain.Product, 0)
 	}
+	defer productRows.Close()
 
 	return extractProductsFromRows(productRows)
 }
 
 func (repository *ProductRepository) AddProduct(product *domain.Product) error {
-	ctx := context.Background()
+	insertStatement := "INSERT INTO products (name, price, quantity, category) VALUES (?, ?, ?, ?)"
 
-	insertStatement := "INSERT INTO products (name, price, quantity, category) VALUES ($1, $2, $3, $4)"
-
-	addNewProduct, err := repository.dbPool.Exec(ctx, insertStatement, product.Name, product.Price, product.Quantity, product.Category)
+	result, err := repository.db.Exec(insertStatement, product.Name, product.Price, product.Quantity, product.Category)
 	if err != nil {
 		log.Errorf("error while adding a new product: %v", err)
 		return err
 	}
 
-	log.Info(fmt.Sprintf("Product added successfully: %v", addNewProduct))
+	log.Info(fmt.Sprintf("Product added successfully: %v", result))
 	return nil
 }
 
 func (repository *ProductRepository) CheckProductExistence(productId int64) error {
-	ctx := context.Background()
-
 	var exists bool
-	query := "SELECT EXISTS(SELECT 1 FROM products WHERE id = $1)"
-	err := repository.dbPool.QueryRow(ctx, query, productId).Scan(&exists)
+	query := "SELECT EXISTS(SELECT 1 FROM products WHERE id = ?)"
+	err := repository.db.QueryRow(query, productId).Scan(&exists)
 	if err != nil {
 		log.Errorf("error while checking product existence: %v", err)
 		return err
@@ -82,40 +76,41 @@ func (repository *ProductRepository) CheckProductExistence(productId int64) erro
 }
 
 func (repository *ProductRepository) UpdateProductById(updatedProduct *domain.Product, productId int64) error {
-	ctx := context.Background()
-
-	updateStatement := "UPDATE products SET name = $1, price = $2, quantity = $3, category = $4 WHERE id = $5"
-	_, err := repository.dbPool.Exec(ctx, updateStatement, updatedProduct.Name, updatedProduct.Price, updatedProduct.Quantity, updatedProduct.Category, productId)
+	updateStatement := "UPDATE products SET name = ?, price = ?, quantity = ?, category = ? WHERE id = ?"
+	result, err := repository.db.Exec(updateStatement, updatedProduct.Name, updatedProduct.Price, updatedProduct.Quantity, updatedProduct.Category, productId)
 	if err != nil {
 		log.Errorf("error while updating product: %v", err)
 		return err
 	}
 
-	log.Info(fmt.Sprintf("Product updated successfully: %v", updatedProduct))
+	log.Info(fmt.Sprintf("Product updated successfully: %v", result))
 	return nil
 }
 
 func (repository *ProductRepository) DeleteProductById(productId int64) error {
-	ctx := context.Background()
-
-	deleteExec, err := repository.dbPool.Exec(ctx, "DELETE FROM products WHERE id = $1", productId)
+	result, err := repository.db.Exec("DELETE FROM products WHERE id = ?", productId)
 	if err != nil {
 		log.Errorf("error while deleting product: %v", err)
 		return err
 	}
 
+	rowsAffected, _ := result.RowsAffected()
 	log.Info("Product deleted successfully")
-	log.Info(fmt.Sprintf("%v rows affected", deleteExec.RowsAffected()))
+	log.Info(fmt.Sprintf("%v rows affected", rowsAffected))
 
 	return nil
 }
 
-func extractProductsFromRows(productRows pgx.Rows) []*domain.Product {
+func extractProductsFromRows(productRows *sql.Rows) []*domain.Product {
 	products := make([]*domain.Product, 0)
 
 	for productRows.Next() {
 		product := &domain.Product{}
-		productRows.Scan(&product.Id, &product.Name, &product.Price, &product.Quantity, &product.Category)
+		err := productRows.Scan(&product.Id, &product.Name, &product.Price, &product.Quantity, &product.Category)
+		if err != nil {
+			log.Errorf("error while scanning product row: %v", err)
+			continue
+		}
 		products = append(products, product)
 	}
 

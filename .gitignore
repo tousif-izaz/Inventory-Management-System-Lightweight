@@ -2,9 +2,11 @@
 .claude/
 .env
 cookies.txt
+cookies_sqlite.txt
 nul
 server/ims
 server/ims.exe
+server/data/
 *.db
 *.db-journal
 *.db-wal
