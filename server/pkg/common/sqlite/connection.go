@@ -66,8 +66,30 @@ func fileExists(path string) bool {
 }
 
 func initializeSchema(db *sql.DB) error {
+	// Try to read the extended schema file
+	schemaPath := "./schema_sqlite_extended.sql"
+	schemaBytes, err := os.ReadFile(schemaPath)
+	if err != nil {
+		// Fall back to basic schema if extended file not found
+		log.Warn("Extended schema file not found, using basic schema")
+		return initializeBasicSchema(db)
+	}
+
+	schema := string(schemaBytes)
+	_, err = db.Exec(schema)
+	if err != nil {
+		log.Errorf("Failed to execute extended schema: %v", err)
+		return err
+	}
+
+	log.Info("Extended database schema initialized successfully")
+	return nil
+}
+
+// initializeBasicSchema creates a minimal schema for backward compatibility
+func initializeBasicSchema(db *sql.DB) error {
 	schema := `
-	-- Create users table
+	-- Basic Users table
 	CREATE TABLE IF NOT EXISTS users (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		username TEXT UNIQUE NOT NULL,
@@ -76,7 +98,7 @@ func initializeSchema(db *sql.DB) error {
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
 
-	-- Create products table
+	-- Basic Products table
 	CREATE TABLE IF NOT EXISTS products (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NOT NULL,
@@ -87,7 +109,7 @@ func initializeSchema(db *sql.DB) error {
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
 
-	-- Create indexes for better performance
+	-- Create indexes
 	CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 	CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 	CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);
