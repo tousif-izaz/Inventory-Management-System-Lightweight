@@ -28,7 +28,7 @@ func NewProductRepository(dbPool *pgxpool.Pool) IProductRepository {
 
 func (repository *ProductRepository) GetAllProducts() []*domain.Product {
 	ctx := context.Background()
-	productRows, err := repository.dbPool.Query(ctx, "SELECT * FROM products")
+	productRows, err := repository.dbPool.Query(ctx, "SELECT id, name, price, quantity, category FROM products")
 	if err != nil {
 		log.Errorf("error while getting all products: %v", err)
 		return nil
@@ -39,7 +39,7 @@ func (repository *ProductRepository) GetAllProducts() []*domain.Product {
 
 func (repository *ProductRepository) GetProductsByCategory(category string) []*domain.Product {
 	ctx := context.Background()
-	productRows, err := repository.dbPool.Query(ctx, "SELECT * FROM products WHERE category = $1", category)
+	productRows, err := repository.dbPool.Query(ctx, "SELECT id, name, price, quantity, category FROM products WHERE category = $1", category)
 	if err != nil {
 		log.Errorf("error while getting all products by category: %v", err)
 		return nil
@@ -111,7 +111,7 @@ func (repository *ProductRepository) DeleteProductById(productId int64) error {
 }
 
 func extractProductsFromRows(productRows pgx.Rows) []*domain.Product {
-	var products []*domain.Product
+	products := make([]*domain.Product, 0)
 
 	for productRows.Next() {
 		product := &domain.Product{}

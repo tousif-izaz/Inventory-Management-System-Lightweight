@@ -20,6 +20,7 @@ func NewUserController(userService service.IUserService) *UserController {
 func (controller *UserController) RegisterUserRoutes(e *echo.Echo) {
 	e.POST("/login", controller.Login)
 	e.POST("/signup", controller.SignUp)
+	e.POST("/logout", controller.Logout)
 }
 
 func (controller *UserController) Login(c echo.Context) error {
@@ -38,6 +39,9 @@ func (controller *UserController) Login(c echo.Context) error {
 	cookie.Name = "token"
 	cookie.Value = token
 	cookie.Expires = time.Now().Add(24 * time.Hour)
+	cookie.Path = "/"
+	cookie.HttpOnly = true
+	cookie.SameSite = http.SameSiteLaxMode
 	c.SetCookie(cookie)
 
 	return c.NoContent(http.StatusOK)
@@ -56,4 +60,16 @@ func (controller *UserController) SignUp(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusCreated)
+}
+
+func (controller *UserController) Logout(c echo.Context) error {
+	cookie := new(http.Cookie)
+	cookie.Name = "token"
+	cookie.Value = ""
+	cookie.Expires = time.Now().Add(-24 * time.Hour)
+	cookie.MaxAge = -1
+	cookie.Path = "/"
+	c.SetCookie(cookie)
+
+	return c.NoContent(http.StatusOK)
 }

@@ -24,7 +24,7 @@ export const Login = () => {
             });
 
             if (response.ok) {
-                navigate("/");
+                navigate("/dashboard");
             } else {
                 const errorData = await response.json();
                 setErrorMessage(errorData.error_message || "Login failed");

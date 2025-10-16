@@ -19,7 +19,8 @@ export const Add = () => {
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify(newProduct)
+                body: JSON.stringify(newProduct),
+                credentials: 'include'
             });
 
             if (response.ok) {

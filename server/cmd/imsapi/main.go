@@ -15,10 +15,12 @@ import (
 )
 
 func main() {
+	// Try to load .env file, but don't fail if it doesn't exist
+	// (environment variables may be set directly, e.g., in Docker)
 	envPath := filepath.Join("..", "..", ".env")
 	err := godotenv.Load(envPath)
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("Warning: .env file not found, using environment variables")
 	}
 
 	ctx := context.Background()

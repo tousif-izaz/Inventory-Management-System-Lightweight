@@ -23,7 +23,8 @@ export const Dashboard = () => {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
-                }
+                },
+                credentials: 'include'
             });
 
             if (response.ok) {
@@ -39,7 +40,19 @@ export const Dashboard = () => {
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const response = await fetch("/api/products");
+                const response = await fetch("/api/products", {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    console.error("Failed to fetch products, status:", response.status);
+                    if (response.status === 401) {
+                        console.error("Unauthorized - redirecting to login");
+                        navigate("/login");
+                        return;
+                    }
+                }
+
                 const data = await response.json();
                 setProducts(() => data);
             } catch (error) {
@@ -48,7 +61,7 @@ export const Dashboard = () => {
         };
 
         fetchProducts();
-    }, []);
+    }, [navigate]);
 
     useEffect(() => {
         setCategories(() => Array.from(new Set(products.map(p => p.category))));
@@ -62,7 +75,9 @@ export const Dashboard = () => {
         } else {
             const fetchProducts = async () => {
                 try {
-                    const response = await fetch("/api/products");
+                    const response = await fetch("/api/products", {
+                        credentials: 'include'
+                    });
                     const data = await response.json();
                     setProducts(() => data);
                 } catch (error) {
@@ -84,7 +99,8 @@ export const Dashboard = () => {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json"
-                }
+                },
+                credentials: 'include'
             });
 
             if (response.ok) {

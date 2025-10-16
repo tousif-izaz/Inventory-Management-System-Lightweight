@@ -6,9 +6,17 @@ export default defineConfig({
     server: {
         proxy: {
             '/api': {
-                target: 'https://imsapi.erkindilekci.me',
+                target: 'http://localhost:8080',
                 changeOrigin: true,
-                rewrite: (path) => path.replace(/^\/api/, '')
+                rewrite: (path) => path.replace(/^\/api/, ''),
+                configure: (proxy, _options) => {
+                    proxy.on('proxyReq', (proxyReq, req, _res) => {
+                        console.log('Proxying request:', req.method, req.url);
+                    });
+                    proxy.on('proxyRes', (proxyRes, req, _res) => {
+                        console.log('Response status:', proxyRes.statusCode, 'for', req.url);
+                    });
+                }
             }
         }
     }

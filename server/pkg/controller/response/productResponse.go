@@ -3,6 +3,7 @@ package response
 import "ims-intro/pkg/domain"
 
 type ProductResponse struct {
+	Id       int64   `json:"id"`
 	Name     string  `json:"name"`
 	Price    float32 `json:"price"`
 	Quantity int64   `json:"quantity"`
@@ -11,6 +12,7 @@ type ProductResponse struct {
 
 func toProductResponse(product *domain.Product) *ProductResponse {
 	return &ProductResponse{
+		Id:       product.Id,
 		Name:     product.Name,
 		Price:    product.Price,
 		Quantity: product.Quantity,
@@ -19,7 +21,7 @@ func toProductResponse(product *domain.Product) *ProductResponse {
 }
 
 func ToProductResponseList(products []*domain.Product) []*ProductResponse {
-	var responses []*ProductResponse
+	responses := make([]*ProductResponse, 0)
 	for _, product := range products {
 		responses = append(responses, toProductResponse(product))
 	}
