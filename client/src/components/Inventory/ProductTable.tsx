@@ -7,12 +7,9 @@ type SortDirection = 'asc' | 'desc';
 
 interface ProductTableProps {
     products: Product[];
-    selectedProducts: number[];
     sortField: SortField;
     sortDirection: SortDirection;
     onSort: (field: SortField) => void;
-    onSelectAll: () => void;
-    onToggleSelection: (id: number) => void;
     onView: (product: Product) => void;
     onEdit: (product: Product) => void;
     onDelete: (product: Product) => void;
@@ -25,12 +22,9 @@ interface ProductTableProps {
 
 export const ProductTable = ({
     products,
-    selectedProducts,
     sortField,
     sortDirection,
     onSort,
-    onSelectAll,
-    onToggleSelection,
     onView,
     onEdit,
     onDelete,
@@ -43,17 +37,9 @@ export const ProductTable = ({
     return (
         <div className="bg-white shadow rounded-lg overflow-hidden">
             <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+                <table className="w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-6 py-3 text-left">
-                                <input
-                                    type="checkbox"
-                                    checked={selectedProducts.length === products.length}
-                                    onChange={onSelectAll}
-                                    className="rounded border-gray-300 text-black focus:ring-black"
-                                />
-                            </th>
                             <SortableHeader
                                 label="Name"
                                 field="name"
@@ -68,18 +54,18 @@ export const ProductTable = ({
                                 direction={sortDirection}
                                 onClick={onSort}
                             />
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Category
                             </th>
                             <SortableHeader
-                                label="Cost Price"
+                                label="Cost"
                                 field="cost_price"
                                 currentField={sortField}
                                 direction={sortDirection}
                                 onClick={onSort}
                             />
                             <SortableHeader
-                                label="Selling Price"
+                                label="Price"
                                 field="selling_price"
                                 currentField={sortField}
                                 direction={sortDirection}
@@ -92,10 +78,10 @@ export const ProductTable = ({
                                 direction={sortDirection}
                                 onClick={onSort}
                             />
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Status
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                                 Actions
                             </th>
                         </tr>
@@ -103,35 +89,27 @@ export const ProductTable = ({
                     <tbody className="bg-white divide-y divide-gray-200">
                         {products.map((product) => (
                             <tr key={product.product_id} className="hover:bg-gray-50">
-                                <td className="px-6 py-4">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedProducts.includes(product.product_id)}
-                                        onChange={() => onToggleSelection(product.product_id)}
-                                        className="rounded border-gray-300 text-black focus:ring-black"
-                                    />
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className="px-4 py-3">
                                     <div className="text-sm font-medium text-gray-900">{product.name}</div>
                                     {product.description && (
-                                        <div className="text-sm text-gray-500 truncate max-w-xs">
+                                        <div className="text-xs text-gray-500 truncate max-w-xs">
                                             {product.description}
                                         </div>
                                     )}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                                     {product.sku}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                                     {product.category_name || '-'}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                                     ${product.cost_price.toFixed(2)}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                                     ${product.selling_price.toFixed(2)}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className="px-4 py-3 whitespace-nowrap">
                                     <span
                                         className={`text-sm font-medium ${
                                             (product.current_quantity || 0) <= product.reorder_point
@@ -142,7 +120,7 @@ export const ProductTable = ({
                                         {product.current_quantity || 0} {product.unit}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className="px-4 py-3 whitespace-nowrap">
                                     <span
                                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                                             product.is_active
@@ -153,8 +131,8 @@ export const ProductTable = ({
                                         {product.is_active ? 'Active' : 'Inactive'}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <div className="flex gap-2">
+                                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                                    <div className="flex gap-2 justify-end">
                                         <button
                                             onClick={() => onView(product)}
                                             className="text-indigo-600 hover:text-indigo-900"

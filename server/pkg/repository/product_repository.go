@@ -198,16 +198,16 @@ func (repository *ProductRepository) UpdateProductById(updatedProduct *domain.Pr
 }
 
 func (repository *ProductRepository) DeleteProductById(productId int64) error {
-	// Soft delete - set IsActive to 0
-	updateStatement := "UPDATE Products SET IsActive = 0 WHERE ProductID = ?"
-	result, err := repository.db.Exec(updateStatement, productId)
+	// Hard delete - permanently remove from database
+	deleteStatement := "DELETE FROM Products WHERE ProductID = ?"
+	result, err := repository.db.Exec(deleteStatement, productId)
 	if err != nil {
 		log.Errorf("error while deleting product: %v", err)
 		return err
 	}
 
 	rowsAffected, _ := result.RowsAffected()
-	log.Info("Product deleted successfully (soft delete)")
+	log.Info("Product deleted successfully (hard delete)")
 	log.Info(fmt.Sprintf("%v rows affected", rowsAffected))
 
 	return nil

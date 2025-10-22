@@ -26,7 +26,6 @@ export const Products = () => {
         statusFilter,
         sortField,
         sortDirection,
-        selectedProducts,
         currentProduct,
         formData,
         formErrors,
@@ -37,12 +36,9 @@ export const Products = () => {
         handleAddProduct,
         handleEditProduct,
         handleDeleteProduct,
-        handleBulkDelete,
         handleExportCSV,
         resetForm,
         openEditModal,
-        handleSelectAll,
-        toggleSelection,
         handleSearchChange,
         handleCategoryFilterChange,
         handleStatusFilterChange,
@@ -133,11 +129,8 @@ export const Products = () => {
                         onSearchChange={handleSearchChange}
                     />
                     <ProductActions
-                        selectedCount={selectedProducts.length}
                         onAddProduct={handleOpenAddModal}
                         onExport={handleExportCSV}
-                        onBulkDelete={handleBulkDelete}
-                        isDeleting={actionLoading}
                     />
                 </div>
 
@@ -176,12 +169,9 @@ export const Products = () => {
             ) : (
                 <ProductTable
                     products={products}
-                    selectedProducts={selectedProducts}
                     sortField={sortField}
                     sortDirection={sortDirection}
                     onSort={handleSort}
-                    onSelectAll={handleSelectAll}
-                    onToggleSelection={toggleSelection}
                     onView={handleOpenDetailsModal}
                     onEdit={handleOpenEditModal}
                     onDelete={handleOpenDeleteDialog}
@@ -237,7 +227,7 @@ export const Products = () => {
                     onClose={handleCloseDeleteDialog}
                     onConfirm={handleConfirmDelete}
                     title="Delete Product"
-                    message={`Are you sure you want to delete "${currentProduct.name}" - ${currentProduct.category_name || 'No Category'}?`}
+                    message={`Are you sure you want to permanently delete "${currentProduct.name}" - ${currentProduct.category_name || 'No Category'}? This action cannot be undone.`}
                     confirmText="Delete"
                     isLoading={actionLoading}
                 />
