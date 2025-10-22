@@ -1,7 +1,10 @@
 # Inventory Management System - API Specification
 
 ## Overview
-This document outlines all API endpoints for the extended Inventory Management System based on the schema in `schema_sqlite_extended.sql`.
+This document outlines all API endpoints for the Inventory Management System based on the schema in `schema_sqlite.sql` (version 2.2.0).
+
+## Schema Version
+**Current Schema:** 2.2.0 - Simplified schema with inventory tracking directly in Products table
 
 ## Base URL
 ```
@@ -10,6 +13,29 @@ http://localhost:8080
 
 ## Authentication
 All endpoints except `/login` and `/signup` require authentication via JWT token in Cookie.
+
+## Schema Changes Summary (v2.2.0)
+
+This version introduces significant simplifications to the database schema:
+
+### What Changed:
+1. **Removed Inventory Table** - Inventory is now tracked directly in the Products table
+2. **Removed Barcode Field** - Simplified product identification to SKU only
+3. **Added CurrentQuantity** - Direct quantity tracking on each product
+4. **Removed Location References** - Simplified to single ShelfLocation field
+5. **Simplified Views** - Stock views now query Products table directly
+
+### Migration Impact:
+- **Products API:** Request/response schemas updated (removed `barcode`, added `current_quantity`)
+- **Inventory API:** Endpoints removed (use Products endpoints instead)
+- **Purchases/Sales API:** `location_id` removed from items, quantities update Products directly
+- **Frontend:** Types and forms updated to reflect new schema
+
+### Benefits:
+- Simpler database structure with fewer joins
+- Easier to understand and maintain
+- Better performance for single-location businesses
+- Direct product quantity management
 
 ---
 
@@ -115,47 +141,7 @@ All endpoints except `/login` and `/signup` require authentication via JWT token
 
 ---
 
-## 3. Locations API
-
-### Create Location
-- **Endpoint:** `POST /locations`
-- **Auth Required:** Yes (admin, manager)
-- **Request Body:**
-```json
-{
-  "name": "Warehouse A",
-  "type": "warehouse",
-  "address": "456 Storage Ave"
-}
-```
-- **Response:** `201 Created`
-
-### List All Locations
-- **Endpoint:** `GET /locations`
-- **Auth Required:** Yes
-- **Query Params:**
-  - `type` (optional): `warehouse` | `store` | `shelf` | `zone`
-  - `is_active` (optional): `true` | `false`
-- **Response:** `200 OK` (array of locations)
-
-### Get Location by ID
-- **Endpoint:** `GET /locations/:id`
-- **Auth Required:** Yes
-- **Response:** `200 OK`
-
-### Update Location
-- **Endpoint:** `PUT /locations/:id`
-- **Auth Required:** Yes (admin, manager)
-- **Response:** `200 OK`
-
-### Deactivate Location
-- **Endpoint:** `DELETE /locations/:id`
-- **Auth Required:** Yes (admin)
-- **Response:** `204 No Content`
-
----
-
-## 4. Customers API
+## 3. Customers API
 
 ### Create Customer
 - **Endpoint:** `POST /customers`
@@ -208,7 +194,7 @@ All endpoints except `/login` and `/signup` require authentication via JWT token
 
 ---
 
-## 5. Products API (Extended)
+## 4. Products API
 
 ### Create Product
 - **Endpoint:** `POST /products`
@@ -219,19 +205,24 @@ All endpoints except `/login` and `/signup` require authentication via JWT token
   "name": "Premium Perfume",
   "description": "Luxury fragrance",
   "sku": "PERF-001",
-  "barcode": "1234567890123",
   "category_id": 1,
   "batch_no": "BATCH-2024-01",
   "expiry_date": "2026-01-01T00:00:00Z",
   "cost_price": 50.00,
   "selling_price": 89.99,
+  "current_quantity": 0,
   "min_stock_level": 10,
   "max_stock_level": 100,
   "reorder_point": 20,
-  "unit": "pcs"
+  "unit": "pcs",
+  "shelf_location": "A1-B2"
 }
 ```
 - **Response:** `201 Created`
+- **Notes:**
+  - `barcode` field has been removed in schema v2.2.0
+  - `current_quantity` is now managed directly in the product record
+  - `shelf_location` is optional for tracking physical location
 
 ### List All Products
 - **Endpoint:** `GET /products`
@@ -251,15 +242,10 @@ All endpoints except `/login` and `/signup` require authentication via JWT token
 - **Auth Required:** Yes
 - **Response:** `200 OK`
 
-### Get Product by Barcode
-- **Endpoint:** `GET /products/barcode/:barcode`
-- **Auth Required:** Yes
-- **Response:** `200 OK`
-
 ### Get Low Stock Products
 - **Endpoint:** `GET /products/low-stock`
 - **Auth Required:** Yes
-- **Description:** Returns products where total stock <= reorder point
+- **Description:** Returns products where current_quantity <= reorder_point
 - **Response:** `200 OK`
 
 ### Get Expiring Products
@@ -282,80 +268,7 @@ All endpoints except `/login` and `/signup` require authentication via JWT token
 
 ---
 
-## 6. Inventory API
-
-### Get All Inventory
-- **Endpoint:** `GET /inventory`
-- **Auth Required:** Yes
-- **Query Params:**
-  - `product_id` (optional)
-  - `location_id` (optional)
-- **Response:** `200 OK`
-
-### Get Inventory for Product
-- **Endpoint:** `GET /inventory/product/:productId`
-- **Auth Required:** Yes
-- **Description:** Get inventory across all locations for a product
-- **Response:** `200 OK`
-
-### Get Inventory by Location
-- **Endpoint:** `GET /inventory/location/:locationId`
-- **Auth Required:** Yes
-- **Description:** Get all products at a specific location
-- **Response:** `200 OK`
-
-### Adjust Inventory
-- **Endpoint:** `POST /inventory/adjust`
-- **Auth Required:** Yes (manager+)
-- **Description:** Manual inventory adjustment (for corrections, damages, etc.)
-- **Request Body:**
-```json
-{
-  "product_id": 1,
-  "location_id": 1,
-  "quantity": -5,
-  "reason": "damage",
-  "notes": "Broken during transport",
-  "performed_by": 1
-}
-```
-- **Business Logic:**
-  - Updates Inventory.Quantity
-  - Creates Transaction record (type=adjustment/damage/theft/etc.)
-  - Records previous and new quantities
-- **Response:** `201 Created`
-
-### Transfer Inventory
-- **Endpoint:** `POST /inventory/transfer`
-- **Auth Required:** Yes (staff+)
-- **Description:** Transfer inventory between locations
-- **Request Body:**
-```json
-{
-  "product_id": 1,
-  "from_location_id": 1,
-  "to_location_id": 2,
-  "quantity": 10,
-  "reason": "Restocking store",
-  "performed_by": 1
-}
-```
-- **Business Logic:**
-  - Reduces quantity at source location
-  - Increases quantity at destination location
-  - Creates two Transaction records (type=transfer)
-  - Validates sufficient stock at source
-- **Response:** `201 Created`
-
-### Get Inventory by Location (View)
-- **Endpoint:** `GET /inventory/view/by-location`
-- **Auth Required:** Yes
-- **Description:** Uses vw_inventory_by_location view for formatted results
-- **Response:** `200 OK`
-
----
-
-## 7. Purchases API
+## 5. Purchases API
 
 ### Create Purchase
 - **Endpoint:** `POST /purchases`
@@ -380,7 +293,6 @@ All endpoints except `/login` and `/signup` require authentication via JWT token
       "unit_cost": 50.00,
       "tax_rate": 10.0,
       "discount_percent": 5.0,
-      "location_id": 1,
       "batch_no": "BATCH-2024-01",
       "expiry_date": "2026-01-01T00:00:00Z"
     }
@@ -392,10 +304,13 @@ All endpoints except `/login` and `/signup` require authentication via JWT token
   2. Calculate total_amount and net_amount
   3. Create Purchase record
   4. Create PurchaseItems records
-  5. **Increase Inventory.Quantity** for each item at specified location
+  5. **Increase Product.CurrentQuantity** for each item
   6. Create Transaction records (type=purchase) for audit
-  7. Optionally update Product.CostPrice
+  7. Optionally update Product.CostPrice and Product.BatchNo/ExpiryDate
 - **Response:** `201 Created` with purchase ID
+- **Notes:**
+  - Schema v2.2.0: Inventory is now tracked directly in Products table
+  - `location_id` removed from purchase items (use shelf_location in product)
 
 ### List All Purchases
 - **Endpoint:** `GET /purchases`
@@ -426,7 +341,7 @@ All endpoints except `/login` and `/signup` require authentication via JWT token
 
 ---
 
-## 8. Sales API
+## 6. Sales API
 
 ### Create Sale
 - **Endpoint:** `POST /sales`
@@ -449,22 +364,24 @@ All endpoints except `/login` and `/signup` require authentication via JWT token
       "quantity": 2,
       "unit_price": 89.99,
       "tax_rate": 10.0,
-      "discount_percent": 5.0,
-      "location_id": 1
+      "discount_percent": 5.0
     }
   ]
 }
 ```
 - **Business Logic:**
-  1. Validate sufficient inventory at specified locations
+  1. Validate sufficient inventory (check Product.CurrentQuantity)
   2. Calculate line totals for each item
   3. Calculate total_amount and net_amount
   4. Create Sale record
   5. Create SalesItems records
-  6. **Reduce Inventory.Quantity** for each item at specified location
+  6. **Reduce Product.CurrentQuantity** for each item
   7. Create Transaction records (type=sale) for audit trail
   8. Update Customer.LoyaltyPoints if customer specified
 - **Response:** `201 Created` with sale ID
+- **Notes:**
+  - Schema v2.2.0: Inventory is now tracked directly in Products table
+  - `location_id` removed from sale items
 
 ### List All Sales
 - **Endpoint:** `GET /sales`
@@ -499,35 +416,59 @@ All endpoints except `/login` and `/signup` require authentication via JWT token
 - **Description:** Process full refund and restore inventory
 - **Business Logic:**
   1. Update Sale.PaymentStatus to "refunded"
-  2. **Restore Inventory.Quantity** for all items
+  2. **Restore Product.CurrentQuantity** for all items
   3. Create Transaction records (type=return) for audit
   4. Adjust Customer.LoyaltyPoints if applicable
 - **Response:** `200 OK`
 
+### Generate Receipt PDF
+- **Endpoint:** `GET /sales/:id/receipt`
+- **Auth Required:** Yes (staff+)
+- **Path Parameter:**
+  - `id` (required): Sale ID
+- **Query Parameters:**
+  - `customer_name` (optional): Customer name to display on receipt
+- **Description:** Generate and download PDF receipt for a sale
+- **Response:** PDF file (application/pdf)
+- **Response Headers:**
+  - `Content-Type: application/pdf`
+  - `Content-Disposition: attachment; filename="receipt-{receipt_no}.pdf"`
+- **Example Requests:**
+  ```
+  GET /sales/123/receipt
+  GET /sales/123/receipt?customer_name=Jane%20Smith
+  ```
+- **Receipt Contents:**
+  - **Header:** Shop name, address, phone (Lux perfumes, 1950 E20th St # G-710, Chico, CA 95928, Phone: 530 717 3219)
+  - **Details:** Receipt number, date/time, customer name (if provided)
+  - **Items Table:** Product name/SKU, quantity, unit price, tax rate, discount, line total
+  - **Totals:** Subtotal, tax amount, discount amount, net amount, payment method
+  - **Footer:** Store policy (no refunds, exchanges within 14 days with original packaging)
+- **Error Responses:**
+  - `400 Bad Request` - Invalid sale ID
+  - `404 Not Found` - Sale not found
+  - `500 Internal Server Error` - PDF generation failed
+
 ---
 
-## 9. Transactions API (Audit Trail)
+## 7. Transactions API (Audit Trail)
 
 ### List All Transactions
 - **Endpoint:** `GET /transactions`
 - **Auth Required:** Yes (manager+)
 - **Query Params:**
-  - `transaction_type` (optional): `purchase` | `sale` | `adjustment` | `transfer` | `return` | `damage` | `theft`
+  - `transaction_type` (optional): `purchase` | `sale` | `adjustment` | `return` | `damage` | `theft`
   - `product_id` (optional)
-  - `location_id` (optional)
   - `from_date` (optional): ISO date
   - `to_date` (optional): ISO date
 - **Response:** `200 OK`
+- **Notes:**
+  - Schema v2.2.0: `location_id` removed from transactions
 
 ### Get Transactions for Product
 - **Endpoint:** `GET /transactions/product/:productId`
 - **Auth Required:** Yes (manager+)
 - **Description:** Complete history of all movements for a product
-- **Response:** `200 OK`
-
-### Get Transactions for Location
-- **Endpoint:** `GET /transactions/location/:locationId`
-- **Auth Required:** Yes (manager+)
 - **Response:** `200 OK`
 
 ### Get Transactions by User
@@ -538,7 +479,7 @@ All endpoints except `/login` and `/signup` require authentication via JWT token
 
 ---
 
-## 10. Reports API
+## 8. Reports API
 
 ### Stock Summary Report
 - **Endpoint:** `GET /reports/stock-summary`
@@ -551,24 +492,25 @@ All endpoints except `/login` and `/signup` require authentication via JWT token
     "product_id": 1,
     "name": "Premium Perfume",
     "sku": "PERF-001",
-    "barcode": "1234567890123",
     "category": "Fragrances",
     "cost_price": 50.00,
     "selling_price": 89.99,
     "total_stock": 85,
-    "reserved_stock": 5,
-    "available_stock": 80,
     "min_stock_level": 10,
     "reorder_point": 20,
     "stock_status": "OK"
   }
 ]
 ```
+- **Notes:**
+  - Schema v2.2.0: `barcode` field removed
+  - `total_stock` now comes from `Product.CurrentQuantity`
+  - Reserved/available quantity tracking removed
 
-### Inventory by Location Report
-- **Endpoint:** `GET /reports/inventory-by-location`
+### Inventory Details Report
+- **Endpoint:** `GET /reports/inventory-details`
 - **Auth Required:** Yes
-- **Description:** Uses vw_inventory_by_location view
+- **Description:** Uses vw_inventory_details view for detailed product inventory
 - **Response:** `200 OK`
 
 ### Sales Summary Report
@@ -629,28 +571,31 @@ All endpoints return standard error responses:
 
 ## Business Logic Summary
 
-### Critical Inventory Operations:
+### Critical Inventory Operations (Schema v2.2.0):
 
 1. **Sale Transaction:**
-   - Validates stock availability
-   - Reduces inventory quantities
+   - Validates stock availability (checks Product.CurrentQuantity)
+   - Reduces Product.CurrentQuantity directly
    - Creates audit trail (transactions table)
    - Updates customer loyalty points
 
 2. **Purchase Transaction:**
-   - Increases inventory quantities
+   - Increases Product.CurrentQuantity directly
    - Creates audit trail
-   - Updates cost prices (optional)
+   - Updates Product.CostPrice, BatchNo, ExpiryDate (optional)
 
 3. **Inventory Adjustment:**
    - Manual corrections for discrepancies
+   - Updates Product.CurrentQuantity directly
    - Records reason and performer
    - Full audit trail
 
-4. **Inventory Transfer:**
-   - Atomic operation between locations
-   - Validates source has sufficient stock
-   - Creates paired transactions
+### Schema Simplifications (v2.2.0):
+- **Removed:** Separate Inventory table
+- **Removed:** Multi-location inventory tracking
+- **Removed:** Barcode field from Products
+- **Added:** CurrentQuantity field directly in Products table
+- **Added:** ShelfLocation field for simple physical location tracking
 
 ---
 

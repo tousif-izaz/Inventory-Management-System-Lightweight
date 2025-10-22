@@ -27,7 +27,6 @@ type PurchaseItemRequest struct {
 	UnitCost        float64    `json:"unit_cost" validate:"required,gte=0"`
 	TaxRate         float64    `json:"tax_rate" validate:"gte=0,lte=100"`
 	DiscountPercent float64    `json:"discount_percent" validate:"gte=0,lte=100"`
-	LocationID      *int64     `json:"location_id,omitempty"`
 	BatchNo         *string    `json:"batch_no,omitempty"`
 	ExpiryDate      *time.Time `json:"expiry_date,omitempty"`
 }
@@ -47,7 +46,6 @@ func (r *CreatePurchaseRequest) ToDTO() *dto.PurchaseCreate {
 			UnitCost:        item.UnitCost,
 			TaxRate:         item.TaxRate,
 			DiscountPercent: item.DiscountPercent,
-			LocationID:      item.LocationID,
 			BatchNo:         item.BatchNo,
 			ExpiryDate:      item.ExpiryDate,
 		}

@@ -14,6 +14,8 @@ import (
 type IUserService interface {
 	Login(username, password string) (string, error)
 	SignUp(user dto.UserCreate) error
+	GetUserByUsername(username string) (domain.User, error)
+	UpdatePassword(username, oldPassword, newPassword string) error
 }
 
 type UserService struct {
@@ -32,10 +34,18 @@ func (service *UserService) Login(username, password string) (string, error) {
 		return "", errors.New("no user found with the username: " + username)
 	}
 
+	// Check if user is active
+	if !user.IsActive {
+		return "", errors.New("user account is inactive")
+	}
+
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
 		return "", errors.New("invalid password")
 	}
+
+	// Update last login timestamp
+	_ = service.userRepository.UpdateLastLogin(user.UserID)
 
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &domain.Claims{
@@ -77,11 +87,26 @@ func validateUserCreate(u dto.UserCreate) error {
 	if u.Username == "" {
 		return errors.New("username can't be empty")
 	}
+	if u.Name == "" {
+		return errors.New("name can't be empty")
+	}
 	if u.Password == "" {
-		return errors.New("category can't be empty")
+		return errors.New("password can't be empty")
+	}
+	if len(u.Password) < 8 {
+		return errors.New("password must be at least 8 characters")
 	}
 	if u.Role == "" {
-		return errors.New("quantity can't be empty")
+		return errors.New("role can't be empty")
+	}
+	// Validate role is one of the allowed values
+	validRoles := map[string]bool{
+		"admin":   true,
+		"manager": true,
+		"staff":   true,
+	}
+	if !validRoles[u.Role] {
+		return errors.New("role must be one of: admin, manager, staff")
 	}
 	return nil
 }
@@ -89,7 +114,44 @@ func validateUserCreate(u dto.UserCreate) error {
 func userCreateToUser(userCreate dto.UserCreate) domain.User {
 	return domain.User{
 		Username: userCreate.Username,
+		Name:     userCreate.Name,
+		Email:    userCreate.Email,
 		Password: userCreate.Password,
 		Role:     userCreate.Role,
 	}
+}
+
+func (service *UserService) GetUserByUsername(username string) (domain.User, error) {
+	return service.userRepository.GetUserByUsername(username)
+}
+
+func (service *UserService) UpdatePassword(username, oldPassword, newPassword string) error {
+	// Validate new password
+	if newPassword == "" {
+		return errors.New("new password can't be empty")
+	}
+	if len(newPassword) < 8 {
+		return errors.New("new password must be at least 8 characters")
+	}
+
+	// Get user
+	user, err := service.userRepository.GetUserByUsername(username)
+	if err != nil {
+		return errors.New("user not found")
+	}
+
+	// Verify old password
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(oldPassword))
+	if err != nil {
+		return errors.New("current password is incorrect")
+	}
+
+	// Hash new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return errors.New("error while creating password hash")
+	}
+
+	// Update password
+	return service.userRepository.UpdatePassword(user.UserID, string(hashedPassword))
 }

@@ -87,9 +87,6 @@ export const Login = () => {
                     <p className="mt-4 text-center text-sm text-red-500">{errorMessage}</p>
                 )}
 
-                <p className="mt-8 text-center text-sm text-gray-500">Demo username: erkin</p>
-                <p className="mt-4 text-center text-sm text-gray-500">Demo password: Test1234</p>
-
 
                 <p className="mt-8 text-center text-sm text-gray-500">
                     Not a member?{' '}

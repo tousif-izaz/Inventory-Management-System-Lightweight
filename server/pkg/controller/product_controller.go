@@ -1,10 +1,12 @@
 package controller
 
 import (
-	"github.com/labstack/echo/v4"
 	"ims-intro/pkg/controller/request"
 	"ims-intro/pkg/controller/response"
-	"ims-intro/pkg/domain"
+
+	"github.com/labstack/echo/v4"
+
+	//	"ims-intro/pkg/domain"
 	"ims-intro/pkg/middleware"
 	"ims-intro/pkg/service"
 	"net/http"
@@ -24,22 +26,35 @@ func (controller *ProductController) RegisterProductRoutes(e *echo.Echo) {
 	productsGroup.Use(middleware.AuthMiddleware)
 
 	productsGroup.GET("", controller.GetAllProducts)
+	productsGroup.GET("/sku/:sku", controller.GetProductBySKU)
 	productsGroup.POST("", controller.AddNewProduct)
 	productsGroup.PUT("/:id", controller.UpdateProductById)
 	productsGroup.DELETE("/:id", controller.DeleteProductById)
 }
 
 func (controller *ProductController) GetAllProducts(c echo.Context) error {
-	category := c.QueryParam("category")
-	var products []*domain.Product
+	categoryParam := c.QueryParam("category_id")
 
-	if len(category) == 0 {
-		products = controller.productService.GetAllProducts()
-	} else {
-		products = controller.productService.GetAllProductsByCategory(category)
+	if categoryParam != "" {
+		// If category filter is specified, use the filtered query
+		categoryID, parseErr := strconv.ParseInt(categoryParam, 10, 64)
+		if parseErr != nil {
+			return c.JSON(http.StatusBadRequest, response.NewErrorResponse("Invalid category ID format"))
+		}
+		products, err := controller.productService.GetAllProductsByCategory(categoryID)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, response.NewErrorResponse(err.Error()))
+		}
+		return c.JSON(http.StatusOK, response.ToProductResponseList(products))
 	}
 
-	return c.JSON(http.StatusOK, response.ToProductResponseList(products))
+	// Otherwise, return all products with enriched details
+	productsWithDetails, err := controller.productService.GetAllProductsWithDetails()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, response.NewErrorResponse(err.Error()))
+	}
+
+	return c.JSON(http.StatusOK, response.ToProductWithDetailsResponseList(productsWithDetails))
 }
 
 func (controller *ProductController) AddNewProduct(c echo.Context) error {
@@ -81,6 +96,20 @@ func (controller *ProductController) UpdateProductById(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusOK)
+}
+
+func (controller *ProductController) GetProductBySKU(c echo.Context) error {
+	sku := c.Param("sku")
+	if sku == "" {
+		return c.JSON(http.StatusBadRequest, response.NewErrorResponse("Invalid request: no SKU specified"))
+	}
+
+	product, err := controller.productService.GetProductBySKU(sku)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, response.NewErrorResponse("Product not found with SKU: "+sku))
+	}
+
+	return c.JSON(http.StatusOK, response.ToProductResponse(product))
 }
 
 func (controller *ProductController) DeleteProductById(c echo.Context) error {

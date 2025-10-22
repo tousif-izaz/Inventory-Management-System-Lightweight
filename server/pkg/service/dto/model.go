@@ -13,19 +13,20 @@ type UserCreate struct {
 
 // Product DTOs
 type ProductCreate struct {
-	Name          string
-	Description   *string
-	SKU           string
-	Barcode       *string
-	CategoryID    int64
-	BatchNo       *string
-	ExpiryDate    *time.Time
-	CostPrice     float64
-	SellingPrice  float64
-	MinStockLevel int64
-	MaxStockLevel *int64
-	ReorderPoint  int64
-	Unit          string
+	Name            string
+	Description     *string
+	SKU             string
+	CategoryID      int64
+	BatchNo         *string
+	ExpiryDate      *time.Time
+	CostPrice       float64
+	SellingPrice    float64
+	CurrentQuantity int64
+	MinStockLevel   int64
+	MaxStockLevel   *int64
+	ReorderPoint    int64
+	Unit            string
+	ShelfLocation   *string
 }
 
 // Category DTOs
@@ -48,13 +49,6 @@ type SupplierCreate struct {
 	PaymentTerms  *string
 }
 
-// Location DTOs
-type LocationCreate struct {
-	Name    string
-	Type    *string
-	Address *string
-}
-
 // Customer DTOs
 type CustomerCreate struct {
 	Name    string
@@ -67,21 +61,11 @@ type CustomerCreate struct {
 
 // Inventory DTOs
 type InventoryAdjustment struct {
-	ProductID  int64
-	LocationID int64
-	Quantity   int64 // Can be negative for reductions
-	Reason     string
-	Notes      *string
+	ProductID   int64
+	Quantity    int64 // Can be negative for reductions
+	Reason      string
+	Notes       *string
 	PerformedBy int64
-}
-
-type InventoryTransfer struct {
-	ProductID         int64
-	FromLocationID    int64
-	ToLocationID      int64
-	Quantity          int64
-	Reason            *string
-	PerformedBy       int64
 }
 
 // Purchase DTOs
@@ -105,23 +89,20 @@ type PurchaseItemCreate struct {
 	UnitCost        float64
 	TaxRate         float64
 	DiscountPercent float64
-	LocationID      *int64
 	BatchNo         *string
 	ExpiryDate      *time.Time
 }
 
 // Sale DTOs
 type SaleCreate struct {
-	SaleDate       time.Time
-	ReceiptNo      string
-	CustomerID     *int64
-	TaxAmount      float64
-	DiscountAmount float64
-	PaymentStatus  string
-	PaymentMethod  *string
-	Notes          *string
-	SoldBy         *int64
-	Items          []SaleItemCreate
+	SaleDate      time.Time
+	ReceiptNo     string
+	CustomerID    *int64
+	PaymentStatus string
+	PaymentMethod *string
+	Notes         *string
+	SoldBy        *int64
+	Items         []SaleItemCreate
 }
 
 type SaleItemCreate struct {
@@ -130,14 +111,12 @@ type SaleItemCreate struct {
 	UnitPrice       float64
 	TaxRate         float64
 	DiscountPercent float64
-	LocationID      *int64
 }
 
 // Transaction DTOs
 type TransactionCreate struct {
 	TransactionType string
 	ProductID       int64
-	LocationID      *int64
 	Quantity        int64
 	ReferenceType   *string
 	ReferenceID     *int64

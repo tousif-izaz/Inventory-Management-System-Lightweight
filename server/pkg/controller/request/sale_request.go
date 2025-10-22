@@ -10,8 +10,6 @@ type CreateSaleRequest struct {
 	SaleDate       *time.Time         `json:"sale_date,omitempty"`
 	ReceiptNo      string             `json:"receipt_no" validate:"required"`
 	CustomerID     *int64             `json:"customer_id,omitempty"`
-	TaxAmount      float64            `json:"tax_amount" validate:"gte=0"`
-	DiscountAmount float64            `json:"discount_amount" validate:"gte=0"`
 	PaymentStatus  string             `json:"payment_status" validate:"required,oneof=pending partial paid refunded"`
 	PaymentMethod  *string            `json:"payment_method,omitempty" validate:"omitempty,oneof=cash card mobile bank_transfer credit"`
 	Notes          *string            `json:"notes,omitempty"`
@@ -26,7 +24,6 @@ type SaleItemRequest struct {
 	UnitPrice       float64 `json:"unit_price" validate:"required,gte=0"`
 	TaxRate         float64 `json:"tax_rate" validate:"gte=0,lte=100"`
 	DiscountPercent float64 `json:"discount_percent" validate:"gte=0,lte=100"`
-	LocationID      *int64  `json:"location_id,omitempty"`
 }
 
 // ToDTO converts request to DTO
@@ -44,21 +41,18 @@ func (r *CreateSaleRequest) ToDTO() *dto.SaleCreate {
 			UnitPrice:       item.UnitPrice,
 			TaxRate:         item.TaxRate,
 			DiscountPercent: item.DiscountPercent,
-			LocationID:      item.LocationID,
 		}
 	}
 
 	return &dto.SaleCreate{
-		SaleDate:       saleDate,
-		ReceiptNo:      r.ReceiptNo,
-		CustomerID:     r.CustomerID,
-		TaxAmount:      r.TaxAmount,
-		DiscountAmount: r.DiscountAmount,
-		PaymentStatus:  r.PaymentStatus,
-		PaymentMethod:  r.PaymentMethod,
-		Notes:          r.Notes,
-		SoldBy:         r.SoldBy,
-		Items:          items,
+		SaleDate:      saleDate,
+		ReceiptNo:     r.ReceiptNo,
+		CustomerID:    r.CustomerID,
+		PaymentStatus: r.PaymentStatus,
+		PaymentMethod: r.PaymentMethod,
+		Notes:         r.Notes,
+		SoldBy:        r.SoldBy,
+		Items:         items,
 	}
 }
 

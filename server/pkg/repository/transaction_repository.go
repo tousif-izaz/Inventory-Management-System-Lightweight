@@ -32,10 +32,10 @@ func NewTransactionRepository(db *sql.DB) ITransactionRepository {
 func (r *TransactionRepository) Create(transaction *domain.Transaction) error {
 	query := `
 		INSERT INTO Transactions (
-			TransactionType, TransactionDate, ProductID, LocationID,
+			TransactionType, TransactionDate, ProductID,
 			Quantity, ReferenceType, ReferenceID, PreviousQuantity,
 			NewQuantity, Reason, PerformedBy, Notes
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(
@@ -43,7 +43,6 @@ func (r *TransactionRepository) Create(transaction *domain.Transaction) error {
 		transaction.TransactionType,
 		transaction.TransactionDate,
 		transaction.ProductID,
-		transaction.LocationID,
 		transaction.Quantity,
 		transaction.ReferenceType,
 		transaction.ReferenceID,
@@ -73,7 +72,7 @@ func (r *TransactionRepository) Create(transaction *domain.Transaction) error {
 // GetByID retrieves a transaction by ID
 func (r *TransactionRepository) GetByID(transactionID int64) (*domain.Transaction, error) {
 	query := `
-		SELECT TransactionID, TransactionType, TransactionDate, ProductID, LocationID,
+		SELECT TransactionID, TransactionType, TransactionDate, ProductID,
 		       Quantity, ReferenceType, ReferenceID, PreviousQuantity, NewQuantity,
 		       Reason, PerformedBy, Notes, CreatedAt
 		FROM Transactions
@@ -87,7 +86,7 @@ func (r *TransactionRepository) GetByID(transactionID int64) (*domain.Transactio
 // GetAll retrieves all transactions with optional filters
 func (r *TransactionRepository) GetAll(filters map[string]interface{}) ([]*domain.Transaction, error) {
 	query := `
-		SELECT TransactionID, TransactionType, TransactionDate, ProductID, LocationID,
+		SELECT TransactionID, TransactionType, TransactionDate, ProductID,
 		       Quantity, ReferenceType, ReferenceID, PreviousQuantity, NewQuantity,
 		       Reason, PerformedBy, Notes, CreatedAt
 		FROM Transactions
@@ -107,10 +106,7 @@ func (r *TransactionRepository) GetAll(filters map[string]interface{}) ([]*domai
 		args = append(args, productID)
 	}
 
-	if locationID, ok := filters["location_id"].(int64); ok && locationID > 0 {
-		query += " AND LocationID = ?"
-		args = append(args, locationID)
-	}
+	// LocationID filter removed - not in schema v2.2.0
 
 	query += " ORDER BY TransactionDate DESC, TransactionID DESC"
 
@@ -127,7 +123,7 @@ func (r *TransactionRepository) GetAll(filters map[string]interface{}) ([]*domai
 // GetByProduct retrieves all transactions for a specific product
 func (r *TransactionRepository) GetByProduct(productID int64) ([]*domain.Transaction, error) {
 	query := `
-		SELECT TransactionID, TransactionType, TransactionDate, ProductID, LocationID,
+		SELECT TransactionID, TransactionType, TransactionDate, ProductID,
 		       Quantity, ReferenceType, ReferenceID, PreviousQuantity, NewQuantity,
 		       Reason, PerformedBy, Notes, CreatedAt
 		FROM Transactions
@@ -146,30 +142,16 @@ func (r *TransactionRepository) GetByProduct(productID int64) ([]*domain.Transac
 }
 
 // GetByLocation retrieves all transactions for a specific location
+// NOTE: LocationID removed in schema v2.2.0 - this method is deprecated
 func (r *TransactionRepository) GetByLocation(locationID int64) ([]*domain.Transaction, error) {
-	query := `
-		SELECT TransactionID, TransactionType, TransactionDate, ProductID, LocationID,
-		       Quantity, ReferenceType, ReferenceID, PreviousQuantity, NewQuantity,
-		       Reason, PerformedBy, Notes, CreatedAt
-		FROM Transactions
-		WHERE LocationID = ?
-		ORDER BY TransactionDate DESC, TransactionID DESC
-	`
-
-	rows, err := r.db.Query(query, locationID)
-	if err != nil {
-		log.Errorf("error getting transactions for location %d: %v", locationID, err)
-		return nil, err
-	}
-	defer rows.Close()
-
-	return scanTransactionRows(rows)
+	log.Warnf("GetByLocation is deprecated - LocationID removed in schema v2.2.0")
+	return []*domain.Transaction{}, nil
 }
 
 // GetByUser retrieves all transactions performed by a specific user
 func (r *TransactionRepository) GetByUser(userID int64) ([]*domain.Transaction, error) {
 	query := `
-		SELECT TransactionID, TransactionType, TransactionDate, ProductID, LocationID,
+		SELECT TransactionID, TransactionType, TransactionDate, ProductID,
 		       Quantity, ReferenceType, ReferenceID, PreviousQuantity, NewQuantity,
 		       Reason, PerformedBy, Notes, CreatedAt
 		FROM Transactions
@@ -190,7 +172,7 @@ func (r *TransactionRepository) GetByUser(userID int64) ([]*domain.Transaction, 
 // GetByType retrieves all transactions of a specific type
 func (r *TransactionRepository) GetByType(transactionType string) ([]*domain.Transaction, error) {
 	query := `
-		SELECT TransactionID, TransactionType, TransactionDate, ProductID, LocationID,
+		SELECT TransactionID, TransactionType, TransactionDate, ProductID,
 		       Quantity, ReferenceType, ReferenceID, PreviousQuantity, NewQuantity,
 		       Reason, PerformedBy, Notes, CreatedAt
 		FROM Transactions
@@ -217,7 +199,6 @@ func scanTransactionRow(row *sql.Row) (*domain.Transaction, error) {
 		&transaction.TransactionType,
 		&transaction.TransactionDate,
 		&transaction.ProductID,
-		&transaction.LocationID,
 		&transaction.Quantity,
 		&transaction.ReferenceType,
 		&transaction.ReferenceID,
@@ -244,7 +225,6 @@ func scanTransactionRows(rows *sql.Rows) ([]*domain.Transaction, error) {
 			&transaction.TransactionType,
 			&transaction.TransactionDate,
 			&transaction.ProductID,
-			&transaction.LocationID,
 			&transaction.Quantity,
 			&transaction.ReferenceType,
 			&transaction.ReferenceID,

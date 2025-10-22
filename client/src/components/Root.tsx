@@ -1,18 +1,22 @@
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export const Root = () => {
+    const navigate = useNavigate();
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
     useEffect(() => {
+        // TEMPORARY: Auto-redirect to dashboard for testing
+        navigate("/dashboard");
+
         const token = Cookies.get("token");
         if (token) {
             setIsLoggedIn(() => true);
         } else {
             setIsLoggedIn(() => false);
         }
-    }, []);
+    }, [navigate]);
 
     return (
         <div className="w-full h-[90vh] flex flex-col justify-between ">

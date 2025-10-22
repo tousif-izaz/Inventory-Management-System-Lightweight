@@ -4,6 +4,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"ims-intro/pkg/controller/request"
 	"ims-intro/pkg/controller/response"
+	"ims-intro/pkg/domain"
 	"ims-intro/pkg/service"
 	"net/http"
 	"time"
@@ -17,10 +18,14 @@ func NewUserController(userService service.IUserService) *UserController {
 	return &UserController{userService}
 }
 
-func (controller *UserController) RegisterUserRoutes(e *echo.Echo) {
+func (controller *UserController) RegisterUserRoutes(e *echo.Echo, authMiddleware echo.MiddlewareFunc) {
 	e.POST("/login", controller.Login)
 	e.POST("/signup", controller.SignUp)
 	e.POST("/logout", controller.Logout)
+
+	// Protected routes
+	e.GET("/profile", controller.GetProfile, authMiddleware)
+	e.PUT("/profile/password", controller.UpdatePassword, authMiddleware)
 }
 
 func (controller *UserController) Login(c echo.Context) error {
@@ -70,6 +75,41 @@ func (controller *UserController) Logout(c echo.Context) error {
 	cookie.MaxAge = -1
 	cookie.Path = "/"
 	c.SetCookie(cookie)
+
+	return c.NoContent(http.StatusOK)
+}
+
+func (controller *UserController) GetProfile(c echo.Context) error {
+	// Get username from JWT claims
+	claims := c.Get("user").(*domain.Claims)
+	username := claims.Username
+
+	// Fetch user profile
+	userProfile, err := controller.userService.GetUserByUsername(username)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, response.NewErrorResponse("User not found"))
+	}
+
+	return c.JSON(http.StatusOK, response.ToUserProfileResponse(userProfile))
+}
+
+func (controller *UserController) UpdatePassword(c echo.Context) error {
+	// Get username from JWT claims
+	claims := c.Get("user").(*domain.Claims)
+	username := claims.Username
+
+	// Bind request
+	var updatePasswordRequest request.UpdatePasswordRequest
+	err := c.Bind(&updatePasswordRequest)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, response.NewErrorResponse("Invalid request"))
+	}
+
+	// Update password
+	err = controller.userService.UpdatePassword(username, updatePasswordRequest.OldPassword, updatePasswordRequest.NewPassword)
+	if err != nil {
+		return c.JSON(http.StatusUnprocessableEntity, response.NewErrorResponse(err.Error()))
+	}
 
 	return c.NoContent(http.StatusOK)
 }

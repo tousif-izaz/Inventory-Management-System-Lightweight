@@ -21,29 +21,30 @@ func SetupMockDB() (*sql.DB, sqlmock.Sqlmock, error) {
 
 func CreateTestProduct(id int64) *domain.Product {
 	desc := "Test product description"
-	barcode := "1234567890123"
 	batchNo := "BATCH-001"
 	expiryDate := time.Now().AddDate(1, 0, 0)
 	maxStock := int64(100)
+	shelfLocation := "A1-B2"
 
 	return &domain.Product{
-		ProductID:     id,
-		Name:          "Test Product",
-		Description:   &desc,
-		SKU:           "TEST-SKU-001",
-		Barcode:       &barcode,
-		CategoryID:    1,
-		BatchNo:       &batchNo,
-		ExpiryDate:    &expiryDate,
-		CostPrice:     50.00,
-		SellingPrice:  89.99,
-		MinStockLevel: 10,
-		MaxStockLevel: &maxStock,
-		ReorderPoint:  20,
-		Unit:          "pcs",
-		IsActive:      true,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		ProductID:       id,
+		Name:            "Test Product",
+		Description:     &desc,
+		SKU:             "TEST-SKU-001",
+		CategoryID:      1,
+		BatchNo:         &batchNo,
+		ExpiryDate:      &expiryDate,
+		CostPrice:       50.00,
+		SellingPrice:    89.99,
+		CurrentQuantity: 50,
+		MinStockLevel:   10,
+		MaxStockLevel:   &maxStock,
+		ReorderPoint:    20,
+		Unit:            "pcs",
+		ShelfLocation:   &shelfLocation,
+		IsActive:        true,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 	}
 }
 
@@ -85,20 +86,6 @@ func CreateTestSupplier(id int64) *domain.Supplier {
 	}
 }
 
-func CreateTestLocation(id int64) *domain.Location {
-	locType := "warehouse"
-	address := "456 Storage Ave"
-
-	return &domain.Location{
-		LocationID: id,
-		Name:       "Test Warehouse",
-		Type:       &locType,
-		Address:    &address,
-		IsActive:   true,
-		CreatedAt:  time.Now(),
-	}
-}
-
 func CreateTestCustomer(id int64) *domain.Customer {
 	email := "customer@test.com"
 	phone := "+1234567890"
@@ -121,11 +108,10 @@ func CreateTestCustomer(id int64) *domain.Customer {
 	}
 }
 
-func CreateTestInventory(id, productID, locationID, quantity int64) *domain.Inventory {
+func CreateTestInventory(id, productID, quantity int64) *domain.Inventory {
 	return &domain.Inventory{
 		InventoryID:       id,
 		ProductID:         productID,
-		LocationID:        locationID,
 		Quantity:          quantity,
 		ReservedQuantity:  0,
 		AvailableQuantity: quantity,
@@ -259,4 +245,17 @@ func Float64Ptr(f float64) *float64 {
 
 func TimePtr(t time.Time) *time.Time {
 	return &t
+}
+
+// MockUpdateProductQuantity creates a mock expectation for UpdateProductQuantity
+func MockUpdateProductQuantity(mock sqlmock.Sqlmock, productID, newQuantity int64, shouldFail bool) {
+	if shouldFail {
+		mock.ExpectExec("UPDATE Products SET CurrentQuantity = \\?, UpdatedAt = CURRENT_TIMESTAMP WHERE ProductID = \\? AND IsActive = 1").
+			WithArgs(newQuantity, productID).
+			WillReturnError(sql.ErrConnDone)
+	} else {
+		mock.ExpectExec("UPDATE Products SET CurrentQuantity = \\?, UpdatedAt = CURRENT_TIMESTAMP WHERE ProductID = \\? AND IsActive = 1").
+			WithArgs(newQuantity, productID).
+			WillReturnResult(sqlmock.NewResult(0, 1))
+	}
 }
