@@ -1,7 +1,7 @@
 # Inventory Management System
 
 ## Overview
-A comprehensive web application designed to optimize the tracking, organization, and control of inventory products. The backend is built with Go and SQLite, while the frontend is developed using React and TypeScript. Features include automated backups, sales management with receipt generation, real-time dashboard analytics, and complete inventory control.
+A comprehensive web application designed to optimize the tracking, organization, and control of inventory products. The backend is built with Go and SQLite, while the frontend is developed using React and TypeScript. Features include automated backups, sales management with receipt generation, real-time dashboard analytics, and complete inventory control. Suitable for Offline use, just switch to the integration branch where I have built the Wails configuration that creates one .exe application on build.
 
 ## Screenshot
 <img width="1678" height="1069" alt="image" src="https://github.com/user-attachments/assets/d14c4362-a0f2-4625-a510-5450c73b1817" />
