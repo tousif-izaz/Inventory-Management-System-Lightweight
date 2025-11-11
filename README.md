@@ -1,10 +1,15 @@
 # Inventory Management System
 
 ## Overview
-A comprehensive web application designed to optimize the tracking, organization, and control of inventory products. The backend is built with Go and SQLite, while the frontend is developed using React and TypeScript. Features include automated backups, sales management with receipt generation, real-time dashboard analytics, and complete inventory control.
+A comprehensive web application designed to optimize the tracking, organization, and control of inventory products. The backend is built with Go and SQLite, while the frontend is developed using React and TypeScript. Features include automated backups, sales management with receipt generation, real-time dashboard analytics, and complete inventory control. Suitable for Offline use, just switch to the integration branch where I have built the Wails configuration that creates one .exe application on build.
 
 ## Screenshot
-![imsscreenshot](https://github.com/user-attachments/assets/73eb210e-dbd1-4700-9c68-02b63d0ea3a2)
+<img width="1678" height="1069" alt="image" src="https://github.com/user-attachments/assets/d14c4362-a0f2-4625-a510-5450c73b1817" />
+<img width="1004" height="532" alt="image" src="https://github.com/user-attachments/assets/d43f4d87-653c-46c2-8949-eacb8c1c4bc0" />
+<img width="948" height="324" alt="image" src="https://github.com/user-attachments/assets/452c2cbf-00bc-4f1d-8cf2-5bd208c85886" />
+<img width="937" height="619" alt="image" src="https://github.com/user-attachments/assets/7c051efc-b5af-4766-ad02-ad28569a96de" />
+<img width="667" height="622" alt="sales" src="https://github.com/user-attachments/assets/09e4e9ee-5559-4210-82ef-96ff1f15c4c5" />
+
 
 ## Features
 
